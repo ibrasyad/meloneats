@@ -1,8 +1,8 @@
 import streamlit as st
 import requests
+import os
 
-# Constants
-API_KEY = "b08057471dc3450cbe373a2f074efb7d"
+API_KEY = os.getenv('SPOONACULAR_API_KEY')
 API_ENDPOINT = "https://api.spoonacular.com/recipes/complexSearch"
 
 
