@@ -91,49 +91,56 @@ number = st.number_input("Number of recipes to show:",
                          min_value=1, max_value=10, value=5)
 
 
-# Initialize session state for tracking the last button press time
+# Initialize session state
+if "fetch_button_disabled" not in st.session_state:
+    st.session_state.fetch_button_disabled = False
 if "last_fetch_time" not in st.session_state:
-    st.session_state.last_fetch_time = 0  # Timestamp of last button press
+    st.session_state.last_fetch_time = 0
 
-# Current time
-current_time = time.time()
+# Disable the button for 30 seconds after clicking
+if st.session_state.fetch_button_disabled:
+    elapsed_time = time.time() - st.session_state.last_fetch_time
+    if elapsed_time > 30:
+        st.session_state.fetch_button_disabled = False
+    else:
+        st.info(
+            f'''Please wait {30 - int(elapsed_time)}
+                                      seconds to fetch recipes again.'''
+        )
 
-# Check if the button can be pressed
-if current_time - st.session_state.last_fetch_time < 20:
-    wait_time = int(20 - (current_time - st.session_state.last_fetch_time))
-    st.info(f"Please wait {wait_time} seconds before fetching recipes again.")
-    fetch_disabled = True
-else:
-    fetch_disabled = False
 
-
-if st.button("Fetch Recipes", disabled=fetch_disabled):
-    st.session_state.last_fetch_time = time.time()  # Update last fetch time
+# Define the button and functionality
+if st.button("Fetch Recipes", disabled=st.session_state.fetch_button_disabled):
+    st.session_state.fetch_button_disabled = True
+    st.session_state.last_fetch_time = time.time()
 
     with st.spinner("Fetching recipes..."):
-        data = fetch_recipes(query, API_KEY, number)
-        if data and 'results' in data:
-            recipes = process_recipes(data['results'])
-            for recipe in recipes:
-                with st.container(height=500):
-                    col1, col2 = st.columns([4, 6])
-                    with col1:
-                        st.subheader(recipe['recipe_name'])
-                        col3, col4 = st.columns([2, 2])
-                        with col3:
-                            if recipe['image']:
-                                st.image(recipe['image'], width=300)
+        try:
+            data = fetch_recipes(query, API_KEY, number)
+            if data and 'results' in data:
+                recipes = process_recipes(data['results'])
+                for recipe in recipes:
+                    with st.container():
+                        col1, col2 = st.columns([1, 2])
+                        with col1:
+                            if recipe.get('image'):
+                                st.image(recipe['image'], width=150)
                             st.markdown(
-                                f"**Source:** [Link]({recipe['recipe_source']})")
+                                f"**Source:** [Link]({recipe.get('recipe_source', 'N/A')})"
+                            )
                             st.markdown(
-                                f"**Cooking Time:** {recipe['cooking_time']} minutes")
-                            st.markdown(f"**Servings:** {recipe['servings']}")
-                        with col4:
+                                f"**Cooking Time:** {recipe.get(
+                                    'cooking_time', 'N/A')} minutes"
+                            )
+                            st.markdown(
+                                f"**Servings:** {recipe.get('servings', 'N/A')}")
+                        with col2:
+                            st.subheader(recipe.get('recipe_name', 'Recipe'))
                             st.markdown("**Ingredients:**")
-                            st.text(recipe['ingredients'])
-                    with col2:
-                        st.subheader("How to make it:")
-                        st.markdown("**Steps:**")
-                        st.text(recipe['steps'])
-        else:
-            st.warning("No recipes found or API error occurred.")
+                            st.text("\n".join(recipe.get('ingredients', [])))
+                            st.markdown("**Steps:**")
+                            st.text("\n".join(recipe.get('steps', [])))
+            else:
+                st.warning("No recipes found or API error occurred.")
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
