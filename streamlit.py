@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import os
-import time
 
 API_KEY = os.getenv('SPOONACULAR_API_KEY')
 API_ENDPOINT = "https://api.spoonacular.com/recipes/complexSearch"
@@ -81,7 +80,7 @@ st.markdown('''
             
             Thank you for trying it out, have fun~
             
-            Notes: There should be delay of 20 seconds each use, I had to do it since I'm using a free API.
+            Notes: There's a daily limit of 150 requests. It's a free API, sorry xD
             ''')
 
 # User Inputs
@@ -90,57 +89,31 @@ query = st.text_input(
 number = st.number_input("Number of recipes to show:",
                          min_value=1, max_value=10, value=5)
 
-
-# Initialize session state
-if "fetch_button_disabled" not in st.session_state:
-    st.session_state.fetch_button_disabled = False
-if "last_fetch_time" not in st.session_state:
-    st.session_state.last_fetch_time = 0
-
-# Disable the button for 30 seconds after clicking
-if st.session_state.fetch_button_disabled:
-    elapsed_time = time.time() - st.session_state.last_fetch_time
-    if elapsed_time > 30:
-        st.session_state.fetch_button_disabled = False
-    else:
-        st.info(
-            f'''Please wait {30 - int(elapsed_time)}
-                                      seconds to fetch recipes again.'''
-        )
-
-
-# Define the button and functionality
-if st.button("Fetch Recipes", disabled=st.session_state.fetch_button_disabled):
-    st.session_state.fetch_button_disabled = True
-    st.session_state.last_fetch_time = time.time()
-
+if st.button("Fetch Recipes"):
     with st.spinner("Fetching recipes..."):
-        try:
-            data = fetch_recipes(query, API_KEY, number)
-            if data and 'results' in data:
-                recipes = process_recipes(data['results'])
-                for recipe in recipes:
-                    with st.container():
-                        col1, col2 = st.columns([1, 2])
-                        with col1:
-                            if recipe.get('image'):
-                                st.image(recipe['image'], width=150)
+        data = fetch_recipes(query, API_KEY, number)
+        if data and 'results' in data:
+            recipes = process_recipes(data['results'])
+            for recipe in recipes:
+                with st.container(height=500):
+                    col1, col2 = st.columns([4, 6])
+                    with col1:
+                        st.subheader(recipe['recipe_name'])
+                        col3, col4 = st.columns([2, 2])
+                        with col3:
+                            if recipe['image']:
+                                st.image(recipe['image'], width=300)
                             st.markdown(
-                                f"**Source:** [Link]({recipe.get('recipe_source', 'N/A')})"
-                            )
+                                f"**Source:** [Link]({recipe['recipe_source']})")
                             st.markdown(
-                                f"**Cooking Time:** {recipe.get(
-                                    'cooking_time', 'N/A')} minutes"
-                            )
-                            st.markdown(
-                                f"**Servings:** {recipe.get('servings', 'N/A')}")
-                        with col2:
-                            st.subheader(recipe.get('recipe_name', 'Recipe'))
+                                f"**Cooking Time:** {recipe['cooking_time']} minutes")
+                            st.markdown(f"**Servings:** {recipe['servings']}")
+                        with col4:
                             st.markdown("**Ingredients:**")
-                            st.text("\n".join(recipe.get('ingredients', [])))
-                            st.markdown("**Steps:**")
-                            st.text("\n".join(recipe.get('steps', [])))
-            else:
-                st.warning("No recipes found or API error occurred.")
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
+                            st.text(recipe['ingredients'])
+                    with col2:
+                        st.subheader("How to make it:")
+                        st.markdown("**Steps:**")
+                        st.text(recipe['steps'])
+        else:
+            st.warning("No recipes found or API error occurred.")
