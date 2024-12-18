@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import os
+import time
 
 API_KEY = os.getenv('SPOONACULAR_API_KEY')
 API_ENDPOINT = "https://api.spoonacular.com/recipes/complexSearch"
@@ -37,9 +38,9 @@ def parse_ingredients(ingredients_list):
 def parse_steps(instructions):
     """Parses and formats steps from API response."""
     steps = []
-    if instructions and instructions[0]['steps']:
-        for step in instructions[0]['steps']:
-            steps.append(step['step'])
+    if instructions and instructions[0].get('steps'):
+        for idx, step in enumerate(instructions[0]['steps'], start=1):
+            steps.append(f"{idx}. {step['step']}")
     return "\n".join(steps)
 
 
@@ -72,6 +73,16 @@ st.set_page_config(
 
 # Streamlit Application
 st.title("MelonEats - Recipe Finder")
+st.markdown('''
+            Welcome to my little project!
+            
+            This is a simple tool that you can use to get a random recipe by inputting any ingredients you have.
+            If you're like me who just cook with whatever I have in my fridge, this will be helpful to you too!
+            
+            Thank you for trying it out, have fun~
+            
+            Notes: There should be delay of 20 seconds each use, I had to do it since I'm using a free API.
+            ''')
 
 # User Inputs
 query = st.text_input(
@@ -79,7 +90,26 @@ query = st.text_input(
 number = st.number_input("Number of recipes to show:",
                          min_value=1, max_value=10, value=5)
 
-if st.button("Fetch Recipes"):
+
+# Initialize session state for tracking the last button press time
+if "last_fetch_time" not in st.session_state:
+    st.session_state.last_fetch_time = 0  # Timestamp of last button press
+
+# Current time
+current_time = time.time()
+
+# Check if the button can be pressed
+if current_time - st.session_state.last_fetch_time < 20:
+    wait_time = int(20 - (current_time - st.session_state.last_fetch_time))
+    st.info(f"Please wait {wait_time} seconds before fetching recipes again.")
+    fetch_disabled = True
+else:
+    fetch_disabled = False
+
+
+if st.button("Fetch Recipes", disabled=fetch_disabled):
+    st.session_state.last_fetch_time = time.time()  # Update last fetch time
+
     with st.spinner("Fetching recipes..."):
         data = fetch_recipes(query, API_KEY, number)
         if data and 'results' in data:
