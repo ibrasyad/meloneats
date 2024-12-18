@@ -64,13 +64,20 @@ def process_recipes(data):
     return result
 
 
+st.set_page_config(
+    page_title="MelonEats",
+    page_icon="🍈",
+    layout="wide"
+)
+
 # Streamlit Application
-st.title("Recipe Finder")
+st.title("MelonEats - Recipe Finder")
 
 # User Inputs
-query = st.text_input("Enter a recipe query (e.g., chicken, pasta):")
-number = st.number_input("Number of recipes to fetch:",
-                         min_value=1, max_value=20, value=5)
+query = st.text_input(
+    "Enter the ingredients that you have (e.g., chicken, chili, cheese, beef, pasta):")
+number = st.number_input("Number of recipes to show:",
+                         min_value=1, max_value=10, value=5)
 
 if st.button("Fetch Recipes"):
     with st.spinner("Fetching recipes..."):
@@ -78,17 +85,25 @@ if st.button("Fetch Recipes"):
         if data and 'results' in data:
             recipes = process_recipes(data['results'])
             for recipe in recipes:
-                st.subheader(recipe['recipe_name'])
-                if recipe['image']:
-                    st.image(recipe['image'], width=300)
-                st.markdown(f"**Source:** [Link]({recipe['recipe_source']})")
-                st.markdown(
-                    f"**Cooking Time:** {recipe['cooking_time']} minutes")
-                st.markdown(f"**Servings:** {recipe['servings']}")
-                st.markdown("**Ingredients:**")
-                st.text(recipe['ingredients'])
-                st.markdown("**Steps:**")
-                st.text(recipe['steps'])
-                st.markdown("---")
+                with st.container(height=500):
+                    col1, col2 = st.columns([4, 6])
+                    with col1:
+                        st.subheader(recipe['recipe_name'])
+                        col3, col4 = st.columns([2, 2])
+                        with col3:
+                            if recipe['image']:
+                                st.image(recipe['image'], width=300)
+                            st.markdown(
+                                f"**Source:** [Link]({recipe['recipe_source']})")
+                            st.markdown(
+                                f"**Cooking Time:** {recipe['cooking_time']} minutes")
+                            st.markdown(f"**Servings:** {recipe['servings']}")
+                        with col4:
+                            st.markdown("**Ingredients:**")
+                            st.text(recipe['ingredients'])
+                    with col2:
+                        st.subheader("How to make it:")
+                        st.markdown("**Steps:**")
+                        st.text(recipe['steps'])
         else:
             st.warning("No recipes found or API error occurred.")
