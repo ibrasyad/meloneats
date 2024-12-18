@@ -81,13 +81,16 @@ st.markdown('''
             Thank you for trying it out, have fun~
             
             Notes: There's a daily limit of 150 requests. It's a free API, sorry xD
+            
+            
+            
             ''')
 
 # User Inputs
 query = st.text_input(
     "Enter the ingredients that you have (e.g., chicken, chili, cheese, beef, pasta):")
 number = st.number_input("Number of recipes to show:",
-                         min_value=1, max_value=10, value=5)
+                         min_value=1, max_value=20, value=10)
 
 if st.button("Fetch Recipes"):
     with st.spinner("Fetching recipes..."):
